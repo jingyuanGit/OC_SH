@@ -689,20 +689,20 @@
 		<key>Debug</key>
 		<dict>
 			<key>AppleDebug</key>
-			<true />
+			<false />
 			<key>ApplePanic</key>
-			<true />
+			<false />
 			<key>DisableWatchDog</key>
 			<true />
 			<key>DisplayDelay</key>
 			<integer>0</integer>
 			<key>DisplayLevel</key>
-			<integer>2147483714</integer>
+			<integer>2147483650</integer>
 			
 			<key>SysReport</key>
 			<false />
 			<key>Target</key>
-			<integer>67</integer>
+			<integer>0</integer>
 			<key>LogModules</key><string>*</string>
 		</dict>
 		<key>Entries</key>
@@ -784,7 +784,7 @@
 				AAAAAAAAAAAAAAAAAAA=
 				</data>
 				<key>boot-args</key>
-				<string>ipc_control_port_options=0 ctrsmt=full darkwake=0 e1000=0 -v keepsyms=1 debug=0x100</string>
+				<string>ipc_control_port_options=0 ctrsmt=full darkwake=0 e1000=0</string>
 				<key>csr-active-config</key>
 				<data>
 				AwgAAA==
