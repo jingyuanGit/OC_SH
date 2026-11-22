@@ -1,0 +1,18 @@
+# macOS 写入侧产生的垃圾（AppleDouble / Spotlight / fsevents）
+._*
+.DS_Store
+.Spotlight-V100/
+.fseventsd/
+
+# 本地配置备份与临时文件（部署前不提交）
+*.bak
+*.bak-*
+oldConfig.plist
+esp_test.txt
+
+# 编辑器/系统临时文件
+*~
+*.tmp
+*.log
+Thumbs.db
+desktop.ini
