@@ -3,6 +3,10 @@
 .DS_Store
 .Spotlight-V100/
 .fseventsd/
+.Trashes/
+.TemporaryItems/
+# mount-esp.sh 为避免 Spotlight 索引小容量 ESP 而放的标记文件
+.metadata_never_index
 
 # 本地配置备份与临时文件（部署前不提交）
 *.bak
