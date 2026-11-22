@@ -17,6 +17,9 @@
 
 | 日期 | 改动 | 文档 | commit |
 |---|---|---|---|
+| 2026-11-22 | 部署新 `config.plist` 到 ESP（`EFI/OC/config.plist`）：SHA256 与仓库一致，旧文件备份为 `config.plist.bak-20261122-1358`，语义 diff 仅 5 处 | [同上 §11.3](docs/2026-11-22-opencore-1.0.8-debug-boot-log.md) | —（仅部署动作，无代码提交） |
+| 2026-11-22 | 关闭 OC 调试日志：`Target=0`、`DisplayLevel` 回默认、`AppleDebug/ApplePanic=false`、`boot-args` 去掉 `-v keepsyms=1 debug=0x100`；保留 1.0.8 DEBUG 构建（卡进度条问题确认已由 1.0.8 解决） | [docs/2026-11-22-opencore-1.0.8-debug-boot-log.md §11](docs/2026-11-22-opencore-1.0.8-debug-boot-log.md) | `a8f77b4` |
+| 2026-11-22 | 新增 `mount-esp.sh`：macOS 开机自动挂载 OC 的 ESP（LaunchDaemon，只读探测 + 物理盘优先 + 防 Spotlight 索引） | [docs/2026-11-22-macos-esp-automount.md](docs/2026-11-22-macos-esp-automount.md) | `fa0800a` |
 | 2026-11-22 | 部署 1.0.8 DEBUG 到 ESP（D:），6 个关键文件哈希全对；补齐 ESP 侧备份（含来源不明的旧 `bootx64.efi` 3 MB） | 同上 §5.1 | —（仅部署动作，无代码提交） |
 | 2026-11-22 | 升级 OpenCore 到 1.0.8 DEBUG，config 迁移到新 schema，打开落盘日志与 `-v`；旧构建备份进 `backup/` | [docs/2026-11-22-opencore-1.0.8-debug-boot-log.md](docs/2026-11-22-opencore-1.0.8-debug-boot-log.md) | `90f4bd7` |
 | 2026-11-22 | 新增 `.gitattributes`：统一 LF、把 `.efi/.aml/.kext/.hex` 标为二进制，避免行尾转换破坏签名 | — | `ecba842` |

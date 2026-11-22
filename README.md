@@ -11,6 +11,7 @@
 | 看最近改了什么 | [changelog.md](changelog.md)（只保留最近 30 天，更早的看 git log） |
 | 从 ESP 拉回仓库 | 同上，源和目标反过来 |
 | 普通 shell 怎么提升 | `Start-Process powershell -Verb RunAs -ArgumentList ...`（会弹一次 UAC） |
+| macOS 侧要读 ESP（跑 displaysrc、取启动日志） | `sudo bash mount-esp.sh install` 装一次开机自动挂载，之后固定用 `/Volumes/ESP` 软链（见 [docs/2026-11-22-macos-esp-automount.md](docs/2026-11-22-macos-esp-automount.md)） |
 
 **核心事实：这个机器上，任何非提升权限的进程都读写不了 ESP。** 不是权限表坏了，不是缺盘符，也不是沙箱配置问题——`Access denied` 是 Windows 对 ESP 的保护。别在这上面浪费时间排查。
 
@@ -153,7 +154,8 @@ robocopy $esp 'E:\OC_SH' /E /XD .git docs backup esp /XF README.md changelog.md 
 - **macOS 污染**：从 macOS 侧写过 ESP 后会出现 `._*`（AppleDouble）、`.Spotlight-V100`、`.fseventsd`，别提交。
 - **Keystore/序列号**：`config.plist` 里有 `PlatformInfo` 的序列号和 SMBIOS 信息。推到公开仓库前想清楚；要公开就先清理或改用私有仓库。
 - **仓库体积**：`Kexts\itlwm.kext`(16 MB)、`IntelBluetoothFirmware.kext`(11 MB) 是二进制大件，GitHub 单文件 100 MB 限制没问题，但别再加更大的东西进去。
-- **当前处于调试态**（2026-11-22 起）：OpenCore 是 1.0.8 **DEBUG** 构建，`boot-args` 带 `-v keepsyms=1 debug=0x100`，`Misc > Debug > Target=67` 会往 ESP 根目录写 `opencore-*.txt`。开机变慢、每次引导多一个日志文件都是预期行为；定位完按 [docs/2026-11-22-opencore-1.0.8-debug-boot-log.md](docs/2026-11-22-opencore-1.0.8-debug-boot-log.md) §8 回滚。
+- **调试态已关闭**（2026-11-22 晚）：卡进度条的问题确认由升级到 OpenCore 1.0.8 解决。现在 `Misc > Debug > Target=0`、`DisplayLevel` 回默认、`AppleDebug/ApplePanic=false`，`boot-args` 已去掉 `-v keepsyms=1 debug=0x100`，**ESP 根目录不再产生 `opencore-*.txt`**。`OpenCore.efi` 仍是 1.0.8 **DEBUG** 构建（体积大一点，无副作用）。要再抓日志见 [docs/2026-11-22-opencore-1.0.8-debug-boot-log.md](docs/2026-11-22-opencore-1.0.8-debug-boot-log.md) §11.4。
+- **macOS 侧写 ESP 常常不需要 sudo**：ESP 以 `msdos, noowners` 挂载、属主是挂载用户时（Finder 或非 root 的 `diskutil mount`），直接 `cp` 就能写；只有用 `sudo diskutil mount` 挂的才会变成 root 属主。上面 §3「非提权一律 Access denied」的结论只适用于 Windows。
 
 ## 10. 文件布局
 
@@ -164,6 +166,7 @@ E:\OC_SH\
 ├─ docs\              ← 每次操作的详细记录，YYYY-MM-DD-<slug>.md
 ├─ backup\            ← 替换二进制前的旧构建备份（不进 ESP）
 ├─ esp\               ← 只放 EFI\BOOT 下的文件（BOOTx64.efi），部署时单独 robocopy
+├─ mount-esp.sh       ← macOS 侧：挂载 / 开机自动挂载 ESP（见 docs/2026-11-22-macos-esp-automount.md）
 ├─ config.plist       ← OC 主配置
 ├─ OpenCore.efi
 ├─ ACPI\              ← SSDT-*.aml
