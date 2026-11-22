@@ -1,0 +1,11 @@
+# 换行统一：文本按 LF 入库（工作区仍由 core.autocrlf 保持 CRLF）
+* text=auto
+
+# 二进制：不做换行转换、不当文本 diff，避免破坏签名与校验
+*.efi   binary
+*.aml   binary
+*.kext  binary
+*.hex   binary
+
+# 脚本固定 LF
+*.sh    text eol=lf
