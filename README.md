@@ -1,13 +1,14 @@
 # OC_SH — OpenCore EFI 版本库（ESP 部署说明）
 
-> 给未来的 agent：**先读这一节再看别的。**
+> 给未来的 agent：**先读这一节，再读 [changelog.md](changelog.md) 看最近改了什么，最后才去翻 git 历史。**
 
 ## 30 秒速查
 
 | 想干什么 | 怎么做 |
 |---|---|
 | 看当前 ESP 挂在哪个盘符 | `mountvol`，找 `The EFI System Partition is mounted at X:\` |
-| 把仓库内容推到 ESP | 在**提升权限**的 PowerShell 里 `robocopy <仓库> <ESP>\EFI\OC /E /XD .git /XF README.md` |
+| 把仓库内容推到 ESP | 在**提升权限**的 PowerShell 里 `robocopy <仓库> <ESP>\EFI\OC /E /XD .git docs backup esp /XF README.md changelog.md`，再 `robocopy <仓库>\esp <ESP>\EFI /E`（放 BOOTx64.efi） |
+| 看最近改了什么 | [changelog.md](changelog.md)（只保留最近 30 天，更早的看 git log） |
 | 从 ESP 拉回仓库 | 同上，源和目标反过来 |
 | 普通 shell 怎么提升 | `Start-Process powershell -Verb RunAs -ArgumentList ...`（会弹一次 UAC） |
 
@@ -73,16 +74,20 @@ else { cmd /c 'mountvol D: /S' | Out-Null; $letter = 'D' }
 $esp = "${letter}:\EFI\OC"
 Write-Host "ESP -> $esp"
 
-# 2) 部署
-robocopy 'E:\OC_SH' $esp /E /XD .git /XF README.md /R:1 /W:1 /NFL /NDL
+# 2) 部署 EFI\OC（docs/backup/esp 只是仓库内的资料与暂存，不进 ESP）
+robocopy 'E:\OC_SH' $esp /E /XD .git docs backup esp /XF README.md changelog.md /R:1 /W:1 /NFL /NDL
+if ($LASTEXITCODE -ge 8) { throw "robocopy failed: $LASTEXITCODE" }
+
+# 3) 部署 EFI\BOOT（BOOTx64.efi；第一次用 1.0.8 时必须做，否则加载器和 OpenCore 版本不配套）
+robocopy 'E:\OC_SH\esp' "${letter}:\EFI" /E /R:1 /W:1 /NFL /NDL
 if ($LASTEXITCODE -ge 8) { throw "robocopy failed: $LASTEXITCODE" }
 Write-Host "deploy OK"
 ```
 
 要点：
 
-- `/XD .git`：**必须**。把 `.git` 写进 FAT32 的 ESP 没意义，还会快速吃掉剩余空间。
-- `/XF README.md`：这份说明是给仓库用的，不需要部署进 ESP。
+- `/XD .git docs backup esp`：**必须**。`.git` 写进 FAT32 的 ESP 没意义，还会快速吃掉剩余空间；`docs`/`backup` 是仓库资料，`esp` 是给 `EFI\BOOT` 用的暂存区，都不该落到 `EFI\OC` 里。
+- `/XF README.md changelog.md`：这两份是给仓库看的，不需要部署进 ESP。
 - **不要用 `/MIR`**：它会删掉 ESP 上仓库里没有的东西，误删就开不了机。需要清理就单独、逐个确认地删。
 - `/R:1 /W:1`：失败别重试 100 万次（robocopy 默认 1,000,000 次重试）。
 - robocopy 退出码 `< 8` 都算正常（3 = 有复制 + 有额外项）。
@@ -106,7 +111,7 @@ $null = $p.WaitForExit(180000)
 首次同步、或怀疑 ESP 被人（OC 引导、另一台机器、macOS 侧）改过时：
 
 ```powershell
-robocopy $esp 'E:\OC_SH' /E /XD .git /XF README.md /R:1 /W:1
+robocopy $esp 'E:\OC_SH' /E /XD .git docs backup esp /XF README.md changelog.md /R:1 /W:1
 ```
 
 拉完立刻 `git status` 看差异，再决定要不要 commit。
@@ -148,12 +153,17 @@ robocopy $esp 'E:\OC_SH' /E /XD .git /XF README.md /R:1 /W:1
 - **macOS 污染**：从 macOS 侧写过 ESP 后会出现 `._*`（AppleDouble）、`.Spotlight-V100`、`.fseventsd`，别提交。
 - **Keystore/序列号**：`config.plist` 里有 `PlatformInfo` 的序列号和 SMBIOS 信息。推到公开仓库前想清楚；要公开就先清理或改用私有仓库。
 - **仓库体积**：`Kexts\itlwm.kext`(16 MB)、`IntelBluetoothFirmware.kext`(11 MB) 是二进制大件，GitHub 单文件 100 MB 限制没问题，但别再加更大的东西进去。
+- **当前处于调试态**（2026-11-22 起）：OpenCore 是 1.0.8 **DEBUG** 构建，`boot-args` 带 `-v keepsyms=1 debug=0x100`，`Misc > Debug > Target=67` 会往 ESP 根目录写 `opencore-*.txt`。开机变慢、每次引导多一个日志文件都是预期行为；定位完按 [docs/2026-11-22-opencore-1.0.8-debug-boot-log.md](docs/2026-11-22-opencore-1.0.8-debug-boot-log.md) §8 回滚。
 
 ## 10. 文件布局
 
 ```
 E:\OC_SH\
-├─ README.md          ← 本文件
+├─ README.md          ← 本文件（部署与坑）
+├─ changelog.md       ← 最近 30 天改动索引（agent 读完 README 就读它）
+├─ docs\              ← 每次操作的详细记录，YYYY-MM-DD-<slug>.md
+├─ backup\            ← 替换二进制前的旧构建备份（不进 ESP）
+├─ esp\               ← 只放 EFI\BOOT 下的文件（BOOTx64.efi），部署时单独 robocopy
 ├─ config.plist       ← OC 主配置
 ├─ OpenCore.efi
 ├─ ACPI\              ← SSDT-*.aml
